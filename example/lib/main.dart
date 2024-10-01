@@ -1,61 +1,60 @@
 import 'package:flutter/material.dart';
-import 'dart:async';
-
-import 'package:flutter/services.dart';
 import 'package:tracker/tracker.dart';
 
-void main() {
-  runApp(const MyApp());
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await LocationService().init(distanceFilter: 10, interval: 10, minDistance: 50.0);
+  runApp(MyApp());
 }
 
-class MyApp extends StatefulWidget {
-  const MyApp({super.key});
-
-  @override
-  State<MyApp> createState() => _MyAppState();
-}
-
-class _MyAppState extends State<MyApp> {
-  String _platformVersion = 'Unknown';
-  final _trackerPlugin = Tracker();
-
-  @override
-  void initState() {
-    super.initState();
-    initPlatformState();
-  }
-
-  // Platform messages are asynchronous, so we initialize in an async method.
-  Future<void> initPlatformState() async {
-    String platformVersion;
-    // Platform messages may fail, so we use a try/catch PlatformException.
-    // We also handle the message potentially returning null.
-    try {
-      platformVersion =
-          await _trackerPlugin.getPlatformVersion() ?? 'Unknown platform version';
-    } on PlatformException {
-      platformVersion = 'Failed to get platform version.';
-    }
-
-    // If the widget was removed from the tree while the asynchronous platform
-    // message was in flight, we want to discard the reply rather than calling
-    // setState to update our non-existent appearance.
-    if (!mounted) return;
-
-    setState(() {
-      _platformVersion = platformVersion;
-    });
-  }
-
+class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       home: Scaffold(
         appBar: AppBar(
-          title: const Text('Plugin example app'),
+          title: Text('Background Location Tracker'),
         ),
         body: Center(
-          child: Text('Running on: $_platformVersion\n'),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: <Widget>[
+              ElevatedButton(
+                onPressed: () async {
+                  await LocationService().startLocationService();
+                },
+                child: Text('Start Location Service'),
+              ),
+              ElevatedButton(
+                onPressed: () async {
+                  await LocationService().stopLocationService();
+                },
+                child: Text('Stop Location Service'),
+              ),
+              ElevatedButton(
+                onPressed: () async {
+                  List<Map<String, dynamic>> unsyncedLocations = await LocationService().getUnsyncedLocations();
+                  print('Unsynced Locations: $unsyncedLocations');
+                },
+                child: Text('Get Unsynced Locations'),
+              ),
+              ElevatedButton(
+                onPressed: () async {
+                  // Example: Set locations with IDs 1, 2, and 3 as synced
+                  await LocationService().setLocationsSynced([1, 2, 3]);
+                },
+                child: Text('Set Locations Synced'),
+              ),
+              ElevatedButton(
+                onPressed: () async {
+                  // Example: Get the oldest 5 locations
+                  List<Map<String, dynamic>> oldestLocations = await LocationService().getOldestNLocations(5);
+                  print('Oldest Locations: $oldestLocations');
+                },
+                child: Text('Get Oldest N Locations'),
+              ),
+            ],
+          ),
         ),
       ),
     );
